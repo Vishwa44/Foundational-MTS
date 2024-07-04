@@ -600,7 +600,7 @@ class PatchTSTEncoderLayer(nn.Module):
             # print("in channel attention")
             if self.new_channel_attention:
                 # print("in new channel attention")
-                print("Hidden state size: ", hidden_state.shape)
+                # print("Hidden state size: ", hidden_state.shape)
                 # hidden_state: [bs x num_channels x sequence_length x d_model]
                 hidden_state = hidden_state.contiguous()
                 # hidden_state: [bs x  num_channels x (sequence_length*d_model)]
@@ -610,13 +610,13 @@ class PatchTSTEncoderLayer(nn.Module):
                 if self.pre_norm:
                     ## Norm and Multi-Head attention and Add residual connection
                     attn_output, channel_attn_weights, _ = self.self_channel_attn(
-                        hidden_states=self.norm_sublayer2(hidden_state), output_attentions=output_attentions, debug_print = True)
+                        hidden_states=self.norm_sublayer2(hidden_state), output_attentions=output_attentions, debug_print = False)
                     # Add: residual connection with residual dropout
                     hidden_state = hidden_state + self.dropout_path2(attn_output)
                 else:
                     ## Multi-Head attention and Add residual connection and Norm
                     attn_output, channel_attn_weights, _ = self.self_channel_attn(
-                        hidden_states=hidden_state, output_attentions=output_attentions, debug_print = True
+                        hidden_states=hidden_state, output_attentions=output_attentions, debug_print = False
                     )
                     # hidden_states: [(bs*sequence_length) x num_channels x d_model]
                     hidden_state = self.norm_sublayer2(hidden_state + self.dropout_path2(attn_output))
