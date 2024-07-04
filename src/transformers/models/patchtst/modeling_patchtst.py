@@ -80,17 +80,23 @@ class PatchTSTAttention(nn.Module):
         attention_mask: Optional[torch.Tensor] = None,
         layer_head_mask: Optional[torch.Tensor] = None,
         output_attentions: bool = False,
+        debug_print: bool = False,
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         """Input shape: Batch x Time x Channel"""
 
         # if key_value_states are provided this layer is used as a cross-attention layer
         # for the decoder
         is_cross_attention = key_value_states is not None
-
+        if debug_print:
+            print("--------------")
+            print("past_key_value: ", past_key_value)
+            print("hidden_states shape: ", hidden_states.shape)
         bsz, tgt_len, _ = hidden_states.size()
 
         # get query proj
         query_states = self.q_proj(hidden_states) * self.scaling
+        if debug_print:
+            print("query_states shape: ", query_states.shape)
         # get key, value proj
         # `past_key_value[0].shape[2] == key_value_states.shape[1]`
         # is checking that the `sequence_length` of the `past_key_value` is the same as
@@ -115,9 +121,13 @@ class PatchTSTAttention(nn.Module):
             value_states = torch.cat([past_key_value[1], value_states], dim=2)
         else:
             # self_attention
+            if debug_print:
+                print("in self attention")
             key_states = self._shape(self.k_proj(hidden_states), -1, bsz)
             value_states = self._shape(self.v_proj(hidden_states), -1, bsz)
-
+        if debug_print:
+            print("key_states shape: ", key_states.shape)
+            print("value_states shape: ", value_states.shape)
         if self.is_decoder:
             # if cross_attention save Tuple(torch.Tensor, torch.Tensor) of all cross attention key/value_states.
             # Further calls to cross_attention layer can then reuse all cross-attention
@@ -132,10 +142,16 @@ class PatchTSTAttention(nn.Module):
         query_states = self._shape(query_states, tgt_len, bsz).view(*proj_shape)
         key_states = key_states.reshape(*proj_shape)
         value_states = value_states.reshape(*proj_shape)
-
+        if debug_print:
+            print("query_states: ", query_states.shape)
+            print("key_states: ", key_states.shape)
+            print("value_states: ", value_states.shape)
         src_len = key_states.size(1)
         attn_weights = torch.bmm(query_states, key_states.transpose(1, 2))
 
+        if debug_print:
+            print("attn_weights: ", attn_weights.shape)
+        
         if attn_weights.size() != (bsz * self.num_heads, tgt_len, src_len):
             raise ValueError(
                 f"Attention weights should be of size {(bsz * self.num_heads, tgt_len, src_len)}, but is"
@@ -174,6 +190,9 @@ class PatchTSTAttention(nn.Module):
         attn_probs = nn.functional.dropout(attn_weights, p=self.dropout, training=self.training)
 
         attn_output = torch.bmm(attn_probs, value_states)
+
+        if debug_print:
+            print("attn_output: ", attn_output.shape)
 
         if attn_output.size() != (bsz * self.num_heads, tgt_len, self.head_dim):
             raise ValueError(
@@ -500,15 +519,18 @@ class PatchTSTEncoderLayer(nn.Module):
         if self.channel_attention:
             self.dropout_path2 = nn.Dropout(config.path_dropout) if config.path_dropout > 0 else nn.Identity()
             if self.new_channel_attention:
+                self.compress_layer = nn.Linear(config.d_model*self.num_patches, config.d_model)
+                self.decompress_layer = nn.Linear(config.d_model, config.d_model*self.num_patches)
                 self.self_channel_attn = PatchTSTAttention(
-                embed_dim=config.d_model*self.num_patches,
+                embed_dim=config.d_model,
                 num_heads=config.num_attention_heads,
                 dropout=config.attention_dropout,)
             
                 if config.norm_type == "batchnorm":
-                    self.norm_sublayer2 = PatchTSTBatchNormChannelAttn(config, self.num_patches)
+                    # self.norm_sublayer2 = PatchTSTBatchNormChannelAttn(config, self.num_patches)
+                    self.norm_sublayer2 = PatchTSTBatchNorm(config)
                 elif config.norm_type == "layernorm":
-                    self.norm_sublayer2 = nn.LayerNorm(config.d_model*self.num_patches, eps=config.norm_eps)
+                    self.norm_sublayer2 = nn.LayerNorm(config.d_model, eps=config.norm_eps)
                 else:
                     raise ValueError(f"{config.norm_type} is not a supported norm layer type.")
             else:
@@ -578,26 +600,30 @@ class PatchTSTEncoderLayer(nn.Module):
             # print("in channel attention")
             if self.new_channel_attention:
                 # print("in new channel attention")
+                print("Hidden state size: ", hidden_state.shape)
                 # hidden_state: [bs x num_channels x sequence_length x d_model]
                 hidden_state = hidden_state.contiguous()
-                # hidden_state: [bs x sequence_length x (num_channels*d_model)]
+                # hidden_state: [bs x  num_channels x (sequence_length*d_model)]
                 hidden_state = hidden_state.view(batch_size, num_input_channels, sequence_length*d_model)
+                # hidden_state: [bs x  num_channels x d_model]
+                hidden_state = self.compress_layer(hidden_state)
                 if self.pre_norm:
                     ## Norm and Multi-Head attention and Add residual connection
                     attn_output, channel_attn_weights, _ = self.self_channel_attn(
-                        hidden_states=self.norm_sublayer2(hidden_state), output_attentions=output_attentions
-                    )
+                        hidden_states=self.norm_sublayer2(hidden_state), output_attentions=output_attentions, debug_print = True)
                     # Add: residual connection with residual dropout
                     hidden_state = hidden_state + self.dropout_path2(attn_output)
                 else:
                     ## Multi-Head attention and Add residual connection and Norm
                     attn_output, channel_attn_weights, _ = self.self_channel_attn(
-                        hidden_states=hidden_state, output_attentions=output_attentions
+                        hidden_states=hidden_state, output_attentions=output_attentions, debug_print = True
                     )
                     # hidden_states: [(bs*sequence_length) x num_channels x d_model]
                     hidden_state = self.norm_sublayer2(hidden_state + self.dropout_path2(attn_output))
 
                 # Reshape hidden state
+                # hidden_state: [bs x  num_channels x (sequence_length*d_model)]
+                hidden_state = self.decompress_layer(hidden_state)
                 # hidden_state: [bs x num_channels x sequence_length x d_model]
                 hidden_state = hidden_state.reshape(batch_size, num_input_channels, sequence_length, d_model)
                 # hidden_state: [bs x num_channels x sequence_length x d_model]
