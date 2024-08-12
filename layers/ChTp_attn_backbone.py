@@ -10,19 +10,19 @@ from layers.PatchTST_layers import *
 from layers.RevIN import RevIN
 
 class model_backbone(nn.Module):
-    def __init__(self, c_in:int, context_window:int, target_window:int, patch_len:int, stride:int, max_seq_len:Optional[int]=1024, 
+    def __init__(self, c_in:int, context_window:int, target_window:int, patch_len:int, stride:int, max_seq_len:Optional[int]=1024,
                  n_layers:int=3, d_model=128, n_heads=16, d_k:Optional[int]=None, d_v:Optional[int]=None, channel_proj_len=128,
                  d_ff:int=256, norm:str='BatchNorm', attn_dropout:float=0., dropout:float=0., act:str="gelu", key_padding_mask:bool='auto',
                  padding_var:Optional[int]=None, attn_mask:Optional[Tensor]=None, pre_norm:bool=False, store_attn:bool=False,
                  pe:str='zeros', learn_pe:bool=True, fc_dropout:float=0., head_dropout = 0, padding_patch = None,
                  pretrain_head:bool=False, head_type = 'flatten', individual = False, revin = True, affine = True, subtract_last = False, fusion_dropout=0, proj_dropout=0, channel_attn_type="parallel", **kwargs):
-        
+
         super().__init__()
-        
+
         # RevIn
         self.revin = revin
         if self.revin: self.revin_layer = RevIN(c_in, affine=affine, subtract_last=subtract_last)
-            
+
         # Patching
         self.patch_len = patch_len
         self.patch_len = patch_len
@@ -30,10 +30,10 @@ class model_backbone(nn.Module):
         self.padding_patch = padding_patch
         patch_num = int((context_window - patch_len)/stride + 1)
         if padding_patch == 'end': # can be modified to general case
-            self.padding_patch_layer = nn.ReplicationPad1d((0, stride)) 
+            self.padding_patch_layer = nn.ReplicationPad1d((0, stride))
             patch_num += 1
         channel_proj_len = channel_proj_len
-        # Backbone 
+        # Backbone
         self.backbone = iEncoder(c_in, patch_num=patch_num, channel_proj_len=channel_proj_len, patch_len=patch_len, max_seq_len=max_seq_len,
                                 n_layers=n_layers, d_model=d_model, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff,
                                 attn_dropout=attn_dropout, dropout=dropout, act=act, key_padding_mask=key_padding_mask, padding_var=padding_var,
@@ -48,26 +48,26 @@ class model_backbone(nn.Module):
         self.individual = individual
 
         self.head = Flatten_Head(self.individual, self.n_vars, self.head_nf, target_window, head_dropout=head_dropout)
-    
-    
+
+
     def forward(self, z):                                                                   # z: [bs x nvars x seq_len]
         # norm
-        if self.revin: 
+        if self.revin:
             z = z.permute(0,2,1)
             z = self.revin_layer(z, 'norm')
             z = z.permute(0,2,1)
-            
+
         if self.padding_patch == 'end':
             z = self.padding_patch_layer(z)
         z = z.unfold(dimension=-1, size=self.patch_len, step=self.stride)                   # z: [bs x nvars x patch_num x patch_len]
         # z = z.permute(0,1,3,2)                                                              # z: [bs x nvars x patch_len x patch_num]
-        
+
         # model
         z = self.backbone(z)                                                                # z: [bs x nvars x d_model x patch_num]
-        z = self.head(z)                                                                    # z: [bs x nvars x target_window] 
-        
+        z = self.head(z)                                                                    # z: [bs x nvars x target_window]
+
         # denorm
-        if self.revin: 
+        if self.revin:
             z = z.permute(0,2,1)
             z = self.revin_layer(z, 'denorm')
             z = z.permute(0,2,1)
@@ -76,10 +76,10 @@ class model_backbone(nn.Module):
 class Flatten_Head(nn.Module):
     def __init__(self, individual, n_vars, nf, target_window, head_dropout=0):
         super().__init__()
-        
+
         self.individual = individual
         self.n_vars = n_vars
-        
+
         if self.individual:
             self.linears = nn.ModuleList()
             self.dropouts = nn.ModuleList()
@@ -92,7 +92,7 @@ class Flatten_Head(nn.Module):
             self.flatten = nn.Flatten(start_dim=-2)
             self.linear = nn.Linear(nf, target_window)
             self.dropout = nn.Dropout(head_dropout)
-            
+
     def forward(self, x):                                 # x: [bs x nvars x d_model x patch_num]
         if self.individual:
             x_out = []
@@ -114,10 +114,10 @@ class iEncoder(nn.Module):  #i means channel-independent
                  d_ff=256, norm='BatchNorm', attn_dropout=0., dropout=0., act="gelu", store_attn=False,
                  key_padding_mask='auto', padding_var=None, attn_mask=None, pre_norm=False,
                  pe='zeros', learn_pe=True, fusion_dropout=0, proj_dropout=0, channel_attn_type="parallel", **kwargs):
-        
-        
+
+
         super().__init__()
-        
+
         self.patch_num = patch_num
         self.patch_len = patch_len
         self.c_in = c_in
@@ -136,9 +136,9 @@ class iEncoder(nn.Module):  #i means channel-independent
         self.encoder = Encoder(c_in, q_len, d_model, n_heads, channel_proj_len=channel_proj_len,d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm, attn_dropout=attn_dropout, dropout=dropout,
                                    pre_norm=pre_norm, activation=act, n_layers=n_layers, store_attn=store_attn, fusion_dropout=fusion_dropout, proj_dropout=proj_dropout, channel_attn_type=channel_attn_type)
 
-        
+
     def forward(self, x) -> Tensor:                                              # x: [bs x nvars x patch_len x patch_num]
-        
+
         n_vars = x.shape[1]
         # Input encoding
         x = self.W_P(x)                                                          # x: [bs x nvars x patch_num x d_model]
@@ -148,26 +148,26 @@ class iEncoder(nn.Module):  #i means channel-independent
         # Encoder
         z = self.encoder(u)                                                      # z: [bs x nvars x patch_num x d_model]
 
-        
-        return z    
+
+        return z
 
 
 class Encoder(nn.Module):
-    def __init__(self, c_in, q_len, d_model, n_heads, channel_proj_len = 128,d_k=None, d_v=None, d_ff=None, 
+    def __init__(self, c_in, q_len, d_model, n_heads, channel_proj_len = 128,d_k=None, d_v=None, d_ff=None,
                         norm='BatchNorm', attn_dropout=0., dropout=0., activation='gelu',
                         n_layers=1, pre_norm=False, store_attn=False, fusion_dropout=0, proj_dropout=0, channel_attn_type='parallel'):
         super().__init__()
 
         self.layers = nn.ModuleList([EncoderLayer(c_in, q_len, d_model,channel_proj_len=channel_proj_len, n_heads=n_heads, d_k=d_k, d_v=d_v, d_ff=d_ff, norm=norm,
                                                       attn_dropout=attn_dropout, dropout=dropout,
-                                                      activation=activation, pre_norm=pre_norm, 
+                                                      activation=activation, pre_norm=pre_norm,
                                                       store_attn=store_attn, fusion_dropout=fusion_dropout, proj_dropout=proj_dropout, channel_attn_type=channel_attn_type) for i in range(n_layers)])
 
     def forward(self, src:Tensor):
         output = src
         for mod in self.layers: output = mod(output)
         return output
-        
+
 
 class EncoderLayer(nn.Module):  #i means channel-independent
     def __init__(self, c_in, q_len, d_model, channel_proj_len, n_heads, d_k=None, d_v=None, d_ff=256, store_attn=False,
@@ -179,14 +179,15 @@ class EncoderLayer(nn.Module):  #i means channel-independent
         self.ff = nn.Sequential(nn.Linear(d_model, d_ff, bias=bias),
                                 get_activation_fn(activation),
                                 nn.Dropout(dropout),
-                                nn.Linear(d_ff, d_model, bias=bias)) 
+                                nn.Linear(d_ff, d_model, bias=bias))
         self.dropout_attn_sublayer1 = nn.Dropout(fusion_dropout)
         self.dropout_attn_sublayer2 = nn.Dropout(fusion_dropout)
         self.channel_attn_type = channel_attn_type
         if "batch" in norm.lower():
-            # self.norm_attn = nn.Sequential(Transpose(1,2), nn.BatchNorm1d(d_model), Transpose(1,2))
-            self.norm_attn_sublayer1 = nn.BatchNorm2d(c_in)
-            self.norm_attn_sublayer2 = nn.BatchNorm2d(c_in)
+            self.norm_attn_sublayer1 = nn.Sequential(Transpose(1,2), nn.BatchNorm1d(d_model), Transpose(1,2))
+            self.norm_attn_sublayer1 = nn.Sequential(Transpose(1,2), nn.BatchNorm1d(d_model), Transpose(1,2))
+            # self.norm_attn_sublayer1 = nn.BatchNorm2d(c_in)
+            # self.norm_attn_sublayer2 = nn.BatchNorm2d(c_in)
         else:
             self.norm_attn_sublayer1 = nn.LayerNorm(d_model)
             self.norm_attn_sublayer2 = nn.LayerNorm(d_model)
@@ -194,44 +195,47 @@ class EncoderLayer(nn.Module):  #i means channel-independent
         # Add & Norm
         self.dropout_ffn = nn.Dropout(dropout)
         if "batch" in norm.lower():
-            # self.norm_ffn = nn.Sequential(Transpose(1,2), nn.BatchNorm1d(d_model), Transpose(1,2))
-            self.norm_ffn = nn.BatchNorm2d(c_in)
+            self.norm_ffn = nn.Sequential(Transpose(1,2), nn.BatchNorm1d(d_model), Transpose(1,2))
+            # self.norm_ffn = nn.BatchNorm2d(c_in)
         else:
             self.norm_ffn = nn.LayerNorm(d_model)
 
         self.pre_norm = pre_norm
     def forward(self, x) -> Tensor:                                              # x: [bs x nvars x patch_num x d_model]
+        b,c,t,h = x.shape
         if self.channel_attn_type == "parallel":
             x_temporal = self.temporal_attn(x)                                       # x_temporal: [bs x nvars x patch_num x d_model]
             x_channel = self.channel_attn(x)                                         # x_channel: [bs x nvars x patch_num x d_model]
             x = self.dropout_attn_sublayer1(x_temporal) + self.dropout_attn_sublayer2(x_channel) + x
 
-            if not self.pre_norm:	
-                x = self.norm_attn_sublayer1(x)
-    
+            if not self.pre_norm:
+                # x = self.norm_attn_sublayer1(x)
+                x = self.norm_attn_sublayer1(x.reshape(b*c,t,-1)).reshape(b,c,t,-1)
+
             # Feed-forward sublayer
             if self.pre_norm:
                 x = self.norm_ffn(x)
-    
+
             x2 = self.ff(x)
             ## Add & Norm
             x = x + self.dropout_ffn(x2) # Add: residual connection with residual dropout
             if not self.pre_norm:
-                x = self.norm_ffn(x)
-            
+                # x = self.norm_ffn(x)
+                x = self.norm_ffn(x.reshape(b*c,t,-1)).reshape(b,c,t,-1)
+
         elif self.channel_attn_type == "sequential":
             x_temporal = self.temporal_attn(x)                                       # x_temporal: [bs x nvars x patch_num x d_model]
             x = x + self.dropout_attn_sublayer1(x_temporal)
-            x = self.norm_attn_sublayer1(x)
+            x = self.norm_attn_sublayer1(x.reshape(b*c,t,-1)).reshape(b,c,t,-1)
             x_channel = self.channel_attn(x)                                         # x_channel: [bs x nvars x patch_num x d_model]
             x = x + self.dropout_attn_sublayer2(x_channel)
-            x = self.norm_attn_sublayer2(x)
+            x = self.norm_attn_sublayer1(x.reshape(b*c,t,-1)).reshape(b,c,t,-1)
             x2 = self.ff(x)
             ## Add & Norm
             x = x + self.dropout_ffn(x2) # Add: residual connection with residual dropout
             if not self.pre_norm:
-                x = self.norm_ffn(x)
-        return x    
+                x = self.norm_ffn(x.reshape(b*c,t,-1)).reshape(b,c,t,-1)
+        return x
 
 
 class ChannelAttentionLayer(nn.Module):
@@ -242,9 +246,9 @@ class ChannelAttentionLayer(nn.Module):
         self.dropout = nn.Dropout(proj_dropout)
 
         self.self_attn = _MultiheadAttention(proj_len, 4, d_k, d_v, attn_dropout=attn_dropout, proj_dropout=dropout)
-    
-    def forward(self, x) -> Tensor: 
-        patch_num = x.shape[2]                                                              # x: [bs x nvars x patch_num x d_model]       
+
+    def forward(self, x) -> Tensor:
+        patch_num = x.shape[2]                                                              # x: [bs x nvars x patch_num x d_model]
         x = torch.reshape(x, (x.shape[0], x.shape[1],x.shape[2]*x.shape[3]))                 # x: [bs x nvars x patch_num * d_model]
         x = self.dropout(self.W_P(x))                                                       # x: [bs x nvars x proj_len]
         x = self.self_attn(x)                                                               # x: [bs x nvars x proj_len]
@@ -258,8 +262,8 @@ class TemporalAttentionLayer(nn.Module):
     def __init__(self, d_model, dropout, n_heads, d_k = None, d_v = None, attn_dropout = 0):
         super().__init__()
         self.self_attn = _MultiheadAttention(d_model, n_heads, d_k, d_v, attn_dropout=attn_dropout, proj_dropout=dropout)
-    
-    def forward(self, x) -> Tensor: 
+
+    def forward(self, x) -> Tensor:
         n_vars = x.shape[1]                                                                 # x: [bs x nvars x patch_num x d_model]
 
         u = torch.reshape(x, (x.shape[0]*x.shape[1],x.shape[2],x.shape[3]))                 # u: [bs * nvars x patch_num x d_model]
