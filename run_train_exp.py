@@ -192,7 +192,7 @@ class config_elec_patchtst():
         self.enc_in = 321
         self.dec_in = 7
         self.c_out = 7
-        self.d_model = 512
+        self.d_model = 128
         self.n_heads = 16
         self.e_layers = 3
         self.d_layers = 1
@@ -201,8 +201,8 @@ class config_elec_patchtst():
         self.factor = 1
         self.distil = True
         self.dropout = 0.2 # 0.2
-        self.fusion_dropout = 0.05
-        self.proj_dropout = 0.05
+        self.fusion_dropout = 0.2
+        self.proj_dropout = 0.2
         self.embed = "timeF"
         self.activation = "gelu"
         self.output_attention = False
@@ -705,7 +705,7 @@ class config_elec_chtp():
         self.enc_in = 321
         self.dec_in = 7
         self.c_out = 7
-        self.d_model = 512
+        self.d_model = 128
         self.channel_proj_len = ch_proj_len
         self.channel_attn_type = channel_attn_type
         self.n_heads = 16
@@ -715,9 +715,9 @@ class config_elec_chtp():
         self.moving_avg = 25
         self.factor = 1
         self.distil = True
-        self.dropout = 0.05 # 0.2
-        self.fusion_dropout = 0.05
-        self.proj_dropout = 0.05
+        self.dropout = 0.2 # 0.2
+        self.fusion_dropout = 0.2
+        self.proj_dropout = 0.2
         self.embed = "timeF"
         self.activation = "gelu"
         self.output_attention = False
