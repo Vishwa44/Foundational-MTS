@@ -160,7 +160,7 @@ class config_ettm2_patchtst():
         self.scheduler = True
         self.use_norm = True
         pass
-
+        
 class config_elec_patchtst():
     def __init__(self, name, seq_len, pred_len, num_epochs) -> None:
         self.model_type = "PatchTST"
@@ -192,7 +192,7 @@ class config_elec_patchtst():
         self.enc_in = 321
         self.dec_in = 7
         self.c_out = 7
-        self.d_model = 128
+        self.d_model = 512
         self.n_heads = 16
         self.e_layers = 3
         self.d_layers = 1
@@ -201,8 +201,8 @@ class config_elec_patchtst():
         self.factor = 1
         self.distil = True
         self.dropout = 0.2 # 0.2
-        self.fusion_dropout = 0.2
-        self.proj_dropout = 0.2
+        self.fusion_dropout = 0.05
+        self.proj_dropout = 0.05
         self.embed = "timeF"
         self.activation = "gelu"
         self.output_attention = False
@@ -411,7 +411,7 @@ class config_elec_itrans():
         self.output_attention = False
         self.scheduler = False
         pass
-
+        
 class config_ettm1_itrans():
     def __init__(self, name, seq_len, pred_len, num_epochs) -> None:
         self.model_type = "iTransformer"
@@ -517,7 +517,7 @@ class config_ettm2_itrans():
         self.output_attention = False
         self.scheduler = False
         pass
-
+        
 class config_etth1_itrans():
     def __init__(self, name, seq_len, pred_len, num_epochs) -> None:
         self.model_type = "iTransformer"
@@ -538,8 +538,8 @@ class config_etth1_itrans():
         self.dec_in = 7
         self.c_out = 7
         self.des = "Exp"
-        self.d_model = 256
-        self.d_ff = 256
+        self.d_model = 16
+        self.d_ff = 128
         self.label_len = 48
         self.use_norm = True
         self.class_strategy = "projection"
@@ -547,7 +547,7 @@ class config_etth1_itrans():
         self.enc_in = 7
         self.dec_in = 7
         self.c_out = 7
-        self.n_heads = 8
+        self.n_heads = 4
         self.d_layers = 1
         self.moving_avg = 25
         self.factor = 1
@@ -570,7 +570,7 @@ class config_etth1_itrans():
         self.output_attention = False
         self.scheduler = False
         pass
-
+        
 class config_etth2_itrans():
     def __init__(self, name, seq_len, pred_len, num_epochs) -> None:
         self.model_type = "iTransformer"
@@ -705,7 +705,7 @@ class config_elec_chtp():
         self.enc_in = 321
         self.dec_in = 7
         self.c_out = 7
-        self.d_model = 128
+        self.d_model = 512
         self.channel_proj_len = ch_proj_len
         self.channel_attn_type = channel_attn_type
         self.n_heads = 16
@@ -715,9 +715,9 @@ class config_elec_chtp():
         self.moving_avg = 25
         self.factor = 1
         self.distil = True
-        self.dropout = 0.2 # 0.2
-        self.fusion_dropout = 0.2
-        self.proj_dropout = 0.2
+        self.dropout = 0.05 # 0.2
+        self.fusion_dropout = 0.05
+        self.proj_dropout = 0.05
         self.embed = "timeF"
         self.activation = "gelu"
         self.output_attention = False
@@ -759,7 +759,7 @@ class config_etth1_chtp():
         self.seq_len = seq_len
         self.label_len = 48
         self.pred_len = pred_len
-        self.fc_dropout = 0.2
+        self.fc_dropout = 0.3
         self.head_dropout = 0.0
         self.patch_len = 16
         self.stride = 8
@@ -774,10 +774,10 @@ class config_etth1_chtp():
         self.enc_in = 7
         self.dec_in = 7
         self.c_out = 7
-        self.d_model = 16
+        self.d_model = 64
         self.channel_proj_len = ch_proj_len
         self.channel_attn_type = channel_attn_type
-        self.n_heads = 4
+        self.n_heads = 8
         self.e_layers = 2
         self.d_layers = 1
         self.d_ff = 128
@@ -796,7 +796,7 @@ class config_etth1_chtp():
         self.train_epochs = num_epochs
         self.batch_size = 128
         self.patience = 50
-        self.learning_rate = 0.001
+        self.learning_rate = 0.0001
         self.des = "Exp"
         self.loss = "mse"
         self.lradj = "type3"
@@ -843,10 +843,10 @@ class config_etth2_chtp():
         self.enc_in = 7
         self.dec_in = 7
         self.c_out = 7
-        self.d_model = 16
+        self.d_model = 64
         self.channel_proj_len = ch_proj_len
         self.channel_attn_type = channel_attn_type
-        self.n_heads = 4
+        self.n_heads = 8
         self.e_layers = 3
         self.d_layers = 1
         self.d_ff = 128
@@ -863,12 +863,12 @@ class config_etth2_chtp():
         self.num_workers = 8
         self.itr = 1
         self.train_epochs = num_epochs
-        self.batch_size = 64
+        self.batch_size = 128
         self.patience = 50
-        self.learning_rate = 0.0001
+        self.learning_rate = 0.001
         self.des = "Exp"
         self.loss = "mse"
-        self.lradj = "type3"
+        self.lradj = "TST"
         self.pct_start = 0.3
         self.use_amp = False
         self.use_gpu = True
@@ -912,19 +912,19 @@ class config_ettm1_chtp():
         self.enc_in = 7
         self.dec_in = 7
         self.c_out = 7
-        self.d_model = 128
+        self.d_model = 64
         self.channel_proj_len = ch_proj_len
         self.channel_attn_type = channel_attn_type
-        self.n_heads = 16
-        self.e_layers = 3
+        self.n_heads = 8
+        self.e_layers = 2
         self.d_layers = 1
-        self.d_ff = 256
+        self.d_ff = 128
         self.moving_avg = 25
         self.factor = 1
         self.distil = True
-        self.dropout = 0.2 # 0.2
-        self.fusion_dropout = 0.2
-        self.proj_dropout = 0.2
+        self.dropout = 0.3 # 0.2
+        self.fusion_dropout = 0.3
+        self.proj_dropout = 0.3
         self.embed = "timeF"
         self.activation = "gelu"
         self.output_attention = False
@@ -934,7 +934,7 @@ class config_ettm1_chtp():
         self.train_epochs = num_epochs
         self.batch_size = 128
         self.patience = 50
-        self.learning_rate = 0.0003
+        self.learning_rate = 0.0005
         self.des = "Exp"
         self.loss = "mse"
         self.lradj = "TST"
@@ -982,19 +982,19 @@ class config_ettm2_chtp():
         self.enc_in = 7
         self.dec_in = 7
         self.c_out = 7
-        self.d_model = 128
+        self.d_model = 64
         self.channel_proj_len = ch_proj_len
         self.channel_attn_type = channel_attn_type
-        self.n_heads = 16
+        self.n_heads = 8
         self.e_layers = 3
         self.d_layers = 1
-        self.d_ff = 256
+        self.d_ff = 128
         self.moving_avg = 25
         self.factor = 1
         self.distil = True
-        self.dropout = 0.2 # 0.2
-        self.fusion_dropout = 0.2
-        self.proj_dropout = 0.2
+        self.dropout = 0.3 # 0.2
+        self.fusion_dropout = 0.3
+        self.proj_dropout = 0.3
         self.embed = "timeF"
         self.activation = "gelu"
         self.output_attention = False
@@ -1004,7 +1004,7 @@ class config_ettm2_chtp():
         self.train_epochs = num_epochs
         self.batch_size = 128
         self.patience = 50
-        self.learning_rate = 0.0001
+        self.learning_rate = 0.0005
         self.des = "Exp"
         self.loss = "mse"
         self.lradj = "TST"
@@ -1019,7 +1019,7 @@ class config_ettm2_chtp():
         self.scheduler = True
         self.use_norm = True
         pass
-
+        
 class config_traffic_chtp():
     def __init__(self, name, seq_len, pred_len, num_epochs, ch_proj_len, channel_attn_type) -> None:
         self.model_type = "ChTp_attn"
@@ -1055,9 +1055,9 @@ class config_traffic_chtp():
         self.channel_proj_len = ch_proj_len
         self.channel_attn_type = channel_attn_type
         self.n_heads = 16
-        self.e_layers = 3
+        self.e_layers = 2
         self.d_layers = 1
-        self.d_ff = 512
+        self.d_ff = 256
         self.moving_avg = 25
         self.factor = 1
         self.distil = True
@@ -1071,12 +1071,80 @@ class config_traffic_chtp():
         self.num_workers = 8
         self.itr = 1
         self.train_epochs = num_epochs
-        self.batch_size = 24
+        self.batch_size = 16
         self.patience = 50
         self.learning_rate = 0.001
         self.des = "Exp"
         self.loss = "mse"
         self.lradj = "TST"
+        self.pct_start = 0.2
+        self.use_amp = False
+        self.use_gpu = True
+        self.gpu = 0
+        self.use_multi_gpu = False
+        self.devices = '0,1,2,3'
+        self.test_flop = False
+        self.profile = False
+        self.scheduler = True
+        pass
+
+class config_weather_chtp():
+    def __init__(self, name, seq_len, pred_len, num_epochs, ch_proj_len, channel_attn_type) -> None:
+        self.model_type = "ChTp_attn"
+        self.is_training = 1
+        self.model_id = "Channel_temporal_attn_Weather_"+str(seq_len)+"_"+str(pred_len)+"_"+str(ch_proj_len)+"_"+name
+        self.model = "PatchTST"
+        self.data = "custom"
+        self.root_path = "/home/vg2523/PatchTST/datasets"
+        self.data_path = "weather.csv"
+        self.features = "M"
+        self.target = "OT"
+        self.freq = "h"
+        self.checkpoints = "./checkpoints/"
+        self.seq_len = seq_len
+        self.label_len = 48
+        self.pred_len = pred_len
+        self.fc_dropout = 0.2
+        self.head_dropout = 0.0
+        self.patch_len = 16
+        self.stride = 8
+        self.padding_patch = 'end'
+        self.revin = 1
+        self.affine = 0
+        self.subtract_last = 0
+        self.decomposition = 0
+        self.kernel_size = 25
+        self.individual = 0
+        self.embed_type = 0
+        self.enc_in = 21
+        self.dec_in = 21
+        self.c_out = 21
+        self.d_model = 128
+        self.channel_proj_len = ch_proj_len
+        self.channel_attn_type = channel_attn_type
+        self.n_heads = 8
+        self.e_layers = 3
+        self.d_layers = 1
+        self.d_ff = 256
+        self.moving_avg = 25
+        self.factor = 1
+        self.distil = True
+        self.dropout = 0.3 # 0.2
+        self.fusion_dropout = 0.3
+        self.proj_dropout = 0.3
+        self.embed = "timeF"
+        self.activation = "gelu"
+        self.output_attention = False
+        self.do_predict = False
+        self.num_workers = 8
+        self.itr = 1
+        self.train_epochs = num_epochs
+        self.batch_size = 128
+        self.patience = 50
+        self.learning_rate = 0.0001
+        self.des = "Exp"
+        self.loss = "mse"
+        self.lradj = "type3"
         self.pct_start = 0.2
         self.use_amp = False
         self.use_gpu = True
@@ -1107,7 +1175,7 @@ def vali(args, model, device, vali_data, vali_loader, criterion):
             dec_inp = torch.zeros_like(batch_y[:, -args.pred_len:, :]).float()
             dec_inp = torch.cat([batch_y[:, :args.label_len, :], dec_inp], dim=1).float().to(device)
             # encoder - decoder
-
+            
             if 'Linear' in args.model or 'TST' in args.model:
                 outputs = model(batch_x)
             else:
@@ -1149,9 +1217,8 @@ def train(setting, args):
     elif args.model_type == "iTransformer":
         model = itransformer_model(args).float().to(device)
     elif args.model_type == "PatchTST":
-        print("PatchTST")
         model = patchtst_model(args).float().to(device)
-
+    
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
     params = sum([np.prod(p.size()) for p in model_parameters])
     print("Model parameters: ", params)
@@ -1254,10 +1321,10 @@ if __name__ == '__main__':
     parser.add_argument('--ch_proj_len', type=int, default=128, help='Channel projection length')
     parser.add_argument('--num_epochs', type=int, default=100, help='Num of train epochs')
     parser.add_argument('--name', type=str, default="", help='Unique ID')
-    parser.add_argument('--dataset', type=str, default="etth1", help='Options: [electricity, etth1, etth2, ettm1, ettm2, traffic]')
+    parser.add_argument('--dataset', type=str, default="etth1", help='Options: [electricity, etth1, etth2, ettm1, ettm2, traffic, weather]')
     parse_args = parser.parse_args()
 
-    channel_attn_type = "parallel" #"sequential""parallel"
+    channel_attn_type = "sequential" #"parallel2" #"sequential""parallel"
     if parse_args.dataset == "electricity" and parse_args.model == "chtp":
         args = config_elec_chtp(parse_args.name, parse_args.seq_len, parse_args.pred_len, parse_args.num_epochs, parse_args.ch_proj_len, channel_attn_type)
     elif parse_args.dataset == "etth1" and parse_args.model == "chtp":
@@ -1270,6 +1337,8 @@ if __name__ == '__main__':
         args = config_ettm1_chtp(parse_args.name, parse_args.seq_len, parse_args.pred_len, parse_args.num_epochs, parse_args.ch_proj_len, channel_attn_type)
     elif parse_args.dataset == "ettm2" and parse_args.model == "chtp":
         args = config_ettm2_chtp(parse_args.name, parse_args.seq_len, parse_args.pred_len, parse_args.num_epochs, parse_args.ch_proj_len, channel_attn_type)
+    elif parse_args.dataset == "weather" and parse_args.model == "chtp":
+        args = config_weather_chtp(parse_args.name, parse_args.seq_len, parse_args.pred_len, parse_args.num_epochs, parse_args.ch_proj_len, channel_attn_type)
     elif parse_args.dataset == "etth2" and parse_args.model == "iTransformer":
         args = config_etth2_itrans(parse_args.name, parse_args.seq_len, parse_args.pred_len, parse_args.num_epochs)
     elif parse_args.dataset == "etth1" and parse_args.model == "iTransformer":
